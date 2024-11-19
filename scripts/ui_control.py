@@ -6,7 +6,7 @@ from turtlesim.srv import Spawn
 import time as t
 
 def controller():
-    rospy.init_node("UI")
+    rospy.init_node("ui_control", anonymous=True)
     rospy.wait_for_service("/spawn")
     client = rospy.ServiceProxy("/spawn", Spawn)
     client(1.0, 5.0, 0.0, "turtle2")

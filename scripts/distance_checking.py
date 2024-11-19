@@ -12,19 +12,17 @@ class DistanceNode:
         
         # Parameters
         self.distance_threshold = 1.5  # Minimum distance between turtles
-        self.boundary_threshold = 1.5  # Minimum distance to boundaries
+        self.boundary_threshold = 1.0  # Minimum distance to boundaries
         
         # Publishers
-        self.distance_pub = rospy.Publisher('/turtle_distance', Float32, queue_size=10)
         
         # Subscribers
         rospy.Subscriber('/turtle1/pose', Pose, self.turtle1_pose_callback)
         rospy.Subscriber('/turtle2/pose', Pose, self.turtle2_pose_callback)
         
-        # Publisher for stopping turtle1
+        # Publishers
+        self.distance_pub = rospy.Publisher('/turtle_distance', Float32, queue_size=10)
         self.turtle1_vel_pub = rospy.Publisher('/turtle1/cmd_vel', Twist, queue_size=10)
-        
-        # Publisher for stopping turtle2
         self.turtle2_vel_pub = rospy.Publisher('/turtle2/cmd_vel', Twist, queue_size=10)
         
         # Pose data for turtles
@@ -58,9 +56,9 @@ class DistanceNode:
             
             # Check if turtle1 is near the boundaries
             if (self.turtle1_pose.x < self.boundary_threshold or
-                self.turtle1_pose.x > 10.0 - self.boundary_threshold or
+                self.turtle1_pose.x > 11.0 - self.boundary_threshold or
                 self.turtle1_pose.y < self.boundary_threshold or
-                self.turtle1_pose.y > 10.0 - self.boundary_threshold):
+                self.turtle1_pose.y > 11.0 - self.boundary_threshold):
                 rospy.logwarn("Turtle1 is near the boundary! Stopping turtles.")
                 self.stop_turtles()
                 return
@@ -68,9 +66,9 @@ class DistanceNode:
             
             # Check if turtle2 is near the boundaries
             if (self.turtle2_pose.x < self.boundary_threshold or
-                self.turtle2_pose.x > 10.0 - self.boundary_threshold or
+                self.turtle2_pose.x > 11.0 - self.boundary_threshold or
                 self.turtle2_pose.y < self.boundary_threshold or
-                self.turtle2_pose.y > 10.0 - self.boundary_threshold):
+                self.turtle2_pose.y > 11.0 - self.boundary_threshold):
                 rospy.logwarn("Turtle2 is near the boundary! Stopping turtles.")
                 self.stop_turtles()
                 return
@@ -79,7 +77,7 @@ class DistanceNode:
         # Stop turtles by publishing zero velocity
         stop_msg = Twist()
         stop_msg.linear.x = 0.0
-        stop_msg.angular.z = 0.0
+        stop_msg.linear.y = 0.0
         self.turtle1_vel_pub.publish(stop_msg)
         self.turtle2_vel_pub.publish(stop_msg)
 
