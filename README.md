@@ -1,7 +1,5 @@
 # assignment1_rt
 
-Test on Ubuntu 20.04 with ROS Noetic
-
 ## Setup
 
 Clone this repository in your Ros Workspace and compile with : 
@@ -43,7 +41,9 @@ rosrun turtlesim turtle_teleop_key
 
 ## Technical notes 
 
-2 scripts python3
+Tested on WSL2 with Ubuntu 20.04 and ROS Noetic
+
+This package contains python3 scripts
 
 ### ui_control.py
 
