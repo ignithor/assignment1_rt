@@ -52,7 +52,7 @@ class DistanceNode:
             
             # Check if the distance is below the threshold
             if distance < self.distance_threshold:
-                rospy.logwarn("Turtles are too close! Stopping turtle.")
+                rospy.logwarn("Turtles are too close! Stopping turtles.")
                 self.stop_turtles()
                 return
             

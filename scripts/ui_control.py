@@ -15,6 +15,9 @@ def controller():
     Pubs = [pub1, pub2]
     while not rospy.is_shutdown():
         turtle_number = int(input("Enter the turtle number (1 or 2): "))
+        if turtle_number not in [1, 2]:
+            print("Invalid turtle number. Please enter 1 or 2.")
+            continue
         vel = Twist()
         vel.linear.x = float(input("Enter the linear velocity along x: "))
         vel.linear.y = float(input("Enter the linear velocity along y: "))
