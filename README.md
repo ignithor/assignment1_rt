@@ -43,7 +43,7 @@ rosrun turtlesim turtle_teleop_key
 
 Tested on WSL2 with Ubuntu 20.04 and ROS Noetic
 
-This package contains 2 python3 scripts
+This package contains 3 python3 scripts
 
 ### ui_control.py
 
