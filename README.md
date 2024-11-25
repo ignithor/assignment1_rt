@@ -36,7 +36,7 @@ rosrun assignment1_rt distance_checking.py
 Now you can give the velocity of one of the two turtles and see them moving.
 
 
-**I also did a third node called 'turtle_control_and_distance_check' that do the same thing as the two first node as the same time but in a better way.** To run this node, don't run the two previous command and do this instead : 
+**I also created a third node called 'turtle_control_and_distance_check' that does the same thing as the first two nodes simultaneously but in a better way to avoid erratic behavior (see Technical notes below). To run this node, do not execute the two previous commands; instead, do the following:** 
 
 ```bash
 rosrun assignment1_rt ui_and_distance_node.py
