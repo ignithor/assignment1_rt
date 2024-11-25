@@ -6,6 +6,7 @@ from turtlesim.srv import Spawn
 from turtlesim.msg import Pose
 from std_msgs.msg import Float32
 import time as t
+import math as m
 
 class TurtleController:
     def __init__(self):
@@ -57,19 +58,24 @@ class TurtleController:
 
     def will_increase_distance(self, vel, turtle_pose, target_pose=None):
         """
-        Check if the given velocity will increase the distance to the target or boundary.
+        Check if the given velocity will increase the distance to the target or boundary,
+        taking the turtle's orientation (theta) into account.
 
         Args:
             vel (Twist): Commanded velocity.
-            turtle_pose (Pose): Current pose of the turtle.
+            turtle_pose (Pose): Current pose of the turtle (includes x, y, theta).
             target_pose (Pose): Target pose of the other turtle (optional).
 
         Returns:
             bool: True if the velocity increases the distance, False otherwise.
         """
+        # Convert velocities to global frame using turtle's orientation (theta)
+        delta_x = vel.linear.x * 0.1 * m.cos(turtle_pose.theta) - vel.linear.y * 0.1 * m.sin(turtle_pose.theta)
+        delta_y = vel.linear.x * 0.1 * m.sin(turtle_pose.theta) + vel.linear.y * 0.1 * m.cos(turtle_pose.theta)
+
         # Predict future position of the turtle
-        future_x = turtle_pose.x + vel.linear.x * 0.1
-        future_y = turtle_pose.y + vel.linear.y * 0.1
+        future_x = turtle_pose.x + delta_x
+        future_y = turtle_pose.y + delta_y
 
         # Check if movement keeps the turtle within boundaries
         if (future_x < self.boundary_threshold or
@@ -83,7 +89,7 @@ class TurtleController:
             current_distance = ((turtle_pose.x - target_pose.x) ** 2 +
                                 (turtle_pose.y - target_pose.y) ** 2) ** 0.5
             future_distance = ((future_x - target_pose.x) ** 2 +
-                               (future_y - target_pose.y) ** 2) ** 0.5
+                            (future_y - target_pose.y) ** 2) ** 0.5
             if future_distance > current_distance:
                 return True  # Movement increases the distance
 
@@ -91,11 +97,12 @@ class TurtleController:
 
         # No target pose provided, assume safe movement
         return True
+
     
-    def turtle1_moving_safe(self, vel):
+    def turtle1_moving_safe(self, vel, duration=1):
         # while distance is safe, allow movement for 1s max
         start_time = t.time()
-        while (self.distance_turtles > self.distance_threshold) and (t.time()-start_time < 1) and (11.0 - self.boundary_threshold > self.turtle1_pose.x > self.boundary_threshold) \
+        while (self.distance_turtles > self.distance_threshold) and (t.time()-start_time < duration) and (11.0 - self.boundary_threshold > self.turtle1_pose.x > self.boundary_threshold) \
                 and (11.0 - self.boundary_threshold > self.turtle1_pose.y > self.boundary_threshold):
             self.turtle1_vel_pub.publish(vel)
             self.compute_turtle_distance()
@@ -104,10 +111,10 @@ class TurtleController:
                 or (11.0 - self.boundary_threshold < self.turtle1_pose.y) or ( self.turtle1_pose.y < self.boundary_threshold):
             rospy.logwarn("Turtle 1 reach a threshold. Stopping Turtle 1.")
     
-    def turtle2_moving_safe(self, vel):
+    def turtle2_moving_safe(self, vel, duration=1):
         # while distance is safe, allow movement for 1s max
         start_time = t.time()
-        while (self.distance_turtles > self.distance_threshold) and (t.time()-start_time < 1) and (11.0 - self.boundary_threshold > self.turtle2_pose.x > self.boundary_threshold) \
+        while (self.distance_turtles > self.distance_threshold) and (t.time()-start_time < duration) and (11.0 - self.boundary_threshold > self.turtle2_pose.x > self.boundary_threshold) \
                 and (11.0 - self.boundary_threshold > self.turtle2_pose.y > self.boundary_threshold):
             self.turtle2_vel_pub.publish(vel)
             self.compute_turtle_distance()
@@ -136,15 +143,20 @@ class TurtleController:
                     # Block movement if the velocity will reduce the distance
                     if self.will_increase_distance(vel, self.turtle1_pose, self.turtle2_pose):
                         start_time = t.time()
-                        while (t.time()-start_time < 1):
+                        while (t.time()-start_time < 1) and (self.distance_turtles <= self.distance_threshold):
                             self.turtle1_vel_pub.publish(vel)
+                        self.turtle1_moving_safe(vel, duration = t.time()-start_time)
                     else:
                         rospy.logwarn("Turtle 1 is at the threshold, and velocity would reduce distance. Stopping Turtle 1.")
                         self.turtle1_vel_pub.publish(Twist())  # Stop turtle
                 if (11.0 - self.boundary_threshold < self.turtle1_pose.x) or ( self.turtle1_pose.x < self.boundary_threshold) \
                             or (11.0 - self.boundary_threshold < self.turtle1_pose.y) or ( self.turtle1_pose.y < self.boundary_threshold):
                                 if self.will_increase_distance(vel, self.turtle1_pose):
-                                    self.turtle1_vel_pub.publish(vel)
+                                    start_time = t.time()
+                                    while (t.time()-start_time < 1) and ( (11.0 - self.boundary_threshold < self.turtle1_pose.x) or ( self.turtle1_pose.x < self.boundary_threshold) \
+                                        or (11.0 - self.boundary_threshold < self.turtle1_pose.y) or ( self.turtle1_pose.y < self.boundary_threshold)):
+                                        self.turtle1_vel_pub.publish(vel)
+                                    self.turtle1_moving_safe(vel, duration = t.time()-start_time)
                                 else:
                                     rospy.logwarn("Turtle 1 is at the border threshold, and velocity would reduce distance. Stopping Turtle 1.")
                                     self.turtle1_vel_pub.publish(Twist())
@@ -158,8 +170,9 @@ class TurtleController:
                     # Block movement if the velocity will reduce the distance
                     if self.will_increase_distance(vel, self.turtle2_pose, self.turtle1_pose):
                         start_time = t.time()
-                        while (t.time()-start_time < 1):
+                        while (t.time()-start_time < 1) and (self.distance_turtles <= self.distance_threshold):
                             self.turtle2_vel_pub.publish(vel)
+                        self.turtle2_moving_safe(vel, duration = t.time()-start_time)
                     else:
                         rospy.logwarn("Turtle 2 is at turtle threshold, and velocity would reduce distance. Stopping Turtle 2.")
                         self.turtle2_vel_pub.publish(Twist())  # Stop turtle
@@ -167,7 +180,11 @@ class TurtleController:
                 if (11.0 - self.boundary_threshold < self.turtle2_pose.x) or ( self.turtle2_pose.x < self.boundary_threshold) \
                             or (11.0 - self.boundary_threshold < self.turtle2_pose.y) or ( self.turtle2_pose.y < self.boundary_threshold):
                                 if self.will_increase_distance(vel, self.turtle2_pose):
-                                    self.turtle2_vel_pub.publish(vel)
+                                    start_time = t.time()
+                                    while (t.time()-start_time < 1) and ( (11.0 - self.boundary_threshold < self.turtle2_pose.x) or ( self.turtle2_pose.x < self.boundary_threshold) \
+                                        or (11.0 - self.boundary_threshold < self.turtle2_pose.y) or ( self.turtle2_pose.y < self.boundary_threshold)):
+                                        self.turtle2_vel_pub.publish(vel)
+                                    self.turtle2_moving_safe(vel, duration = t.time()-start_time)
                                 else:
                                     rospy.logwarn("Turtle 2 is at the border threshold, and velocity would reduce distance. Stopping Turtle 2.")
                                     self.turtle2_vel_pub.publish(Twist())
